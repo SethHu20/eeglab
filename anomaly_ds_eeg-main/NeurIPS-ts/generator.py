@@ -2,6 +2,8 @@ import numpy as np
 # import matplotlib.pyplot as plt
 import pandas as pd
 import sys
+import matplotlib.pyplot as plt
+
 
 def series_segmentation(data, stepsize=1):
     return np.split(data, np.where(np.diff(data) != stepsize)[0] + 1)
@@ -21,7 +23,8 @@ def sine(length, freq=0.04, coef=1.5, offset=0.0, noise_amp=0.05):
 def square_sine(level=5, length=500, freq=0.04, coef=1.5, offset=0.0, noise_amp=0.05):
     value = np.zeros(length)
     for i in range(level):
-        value += 1 / (2 * i + 1) * sine(length=length, freq=freq * (2 * i + 1), coef=coef, offset=offset, noise_amp=noise_amp)
+        value += 1 / (2 * i + 1) * sine(length=length, freq=freq *
+                                        (2 * i + 1), coef=coef, offset=offset, noise_amp=noise_amp)
     return value
 
 
@@ -68,14 +71,18 @@ class UnivariateDataGenerator:
             factor: the larger, the outliers are farther from inliers
             radius: the radius of collective outliers range
         """
-        position = (np.random.rand(round(self.STREAM_LENGTH * ratio)) * self.STREAM_LENGTH).astype(int)
+        position = (np.random.rand(round(self.STREAM_LENGTH * ratio))
+                    * self.STREAM_LENGTH).astype(int)
         maximum, minimum = max(self.data), min(self.data)
         print(maximum, minimum)
         for i in position:
-            local_std = self.data_origin[max(0, i - radius):min(i + radius, self.STREAM_LENGTH)].std()
+            local_std = self.data_origin[max(
+                0, i - radius):min(i + radius, self.STREAM_LENGTH)].std()
             self.data[i] = self.data_origin[i] * factor * local_std
-            if 0 <= self.data[i] < maximum: self.data[i] = maximum
-            if 0 > self.data[i] > minimum: self.data[i] = minimum
+            if 0 <= self.data[i] < maximum:
+                self.data[i] = maximum
+            if 0 > self.data[i] > minimum:
+                self.data[i] = minimum
             self.label[i] = 1
 
     def point_contextual_outliers(self, ratio, factor, radius):
@@ -87,20 +94,27 @@ class UnivariateDataGenerator:
                     Notice: point contextual outliers will not exceed the range of [min, max] of original data
             radius: the radius of collective outliers range
         """
-        position = (np.random.rand(round(self.STREAM_LENGTH * ratio)) * self.STREAM_LENGTH).astype(int)
+        position = (np.random.rand(round(self.STREAM_LENGTH * ratio))
+                    * self.STREAM_LENGTH).astype(int)
         maximum, minimum = max(self.data), min(self.data)
         print(maximum, minimum)
         for i in position:
-            local_std = self.data_origin[max(0, i - radius):min(i + radius, self.STREAM_LENGTH)].std()
+            local_std = self.data_origin[max(
+                0, i - radius):min(i + radius, self.STREAM_LENGTH)].std()
             self.data[i] = self.data_origin[i] * factor * local_std
-            if self.data[i] > maximum: self.data[i] = maximum * min(0.95, abs(np.random.normal(0, 0.5)))  # previous(0, 1)
-            if self.data[i] < minimum: self.data[i] = minimum * min(0.95, abs(np.random.normal(0, 0.5)))
+            if self.data[i] > maximum:
+                # previous(0, 1)
+                self.data[i] = maximum * \
+                    min(0.95, abs(np.random.normal(0, 0.5)))
+            if self.data[i] < minimum:
+                self.data[i] = minimum * \
+                    min(0.95, abs(np.random.normal(0, 0.5)))
 
             self.label[i] = 1
 
     def collective_global_outliers(self, ratio, radius, option='square', coef=3., noise_amp=0.0,
-                                    level=5, freq=0.04, offset=0.0, # only used when option=='square'
-                                    base=[0.,]): # only used when option=='other'
+                                   level=5, freq=0.04, offset=0.0,  # only used when option=='square'
+                                   base=[0., ]):  # only used when option=='other'
         """
         Add collective global outliers to original data
         Args:
@@ -111,7 +125,8 @@ class UnivariateDataGenerator:
             level: how many sine waves will square_wave synthesis
             base: a list of values that we want to substitute inliers when we generate outliers
         """
-        position = (np.random.rand(round(self.STREAM_LENGTH * ratio / (2 * radius))) * self.STREAM_LENGTH).astype(int)
+        position = (np.random.rand(round(self.STREAM_LENGTH *
+                    ratio / (2 * radius))) * self.STREAM_LENGTH).astype(int)
 
         valid_option = {'square', 'other'}
         if option not in valid_option:
@@ -124,7 +139,8 @@ class UnivariateDataGenerator:
             sub_data = collective_global_synthetic(length=self.STREAM_LENGTH, base=base,
                                                    coef=coef, noise_amp=noise_amp)
         for i in position:
-            start, end = max(0, i - radius), min(self.STREAM_LENGTH, i + radius)
+            start, end = max(
+                0, i - radius), min(self.STREAM_LENGTH, i + radius)
             self.data[start:end] = sub_data[start:end]
             self.label[start:end] = 1
 
@@ -136,9 +152,11 @@ class UnivariateDataGenerator:
             factor: how dramatic will the trend be
             radius: the radius of collective outliers range
         """
-        position = (np.random.rand(round(self.STREAM_LENGTH * ratio / (2 * radius))) * self.STREAM_LENGTH).astype(int)
+        position = (np.random.rand(round(self.STREAM_LENGTH *
+                    ratio / (2 * radius))) * self.STREAM_LENGTH).astype(int)
         for i in position:
-            start, end = max(0, i - radius), min(self.STREAM_LENGTH, i + radius)
+            start, end = max(
+                0, i - radius), min(self.STREAM_LENGTH, i + radius)
             slope = np.random.choice([-1, 1]) * factor * np.arange(end - start)
             self.data[start:end] = self.data_origin[start:end] + slope
             self.data[end:] = self.data[end:] + slope[-1]
@@ -152,35 +170,40 @@ class UnivariateDataGenerator:
             factor: how many times will frequency multiple
             radius: the radius of collective outliers range
         """
-        position = (np.random.rand(round(self.STREAM_LENGTH * ratio / (2 * radius))) * self.STREAM_LENGTH).astype(int)
+        position = (np.random.rand(round(self.STREAM_LENGTH *
+                    ratio / (2 * radius))) * self.STREAM_LENGTH).astype(int)
         seasonal_config = self.behavior_config
         seasonal_config['freq'] = factor * self.behavior_config['freq']
         for i in position:
-            start, end = max(0, i - radius), min(self.STREAM_LENGTH, i + radius)
+            start, end = max(
+                0, i - radius), min(self.STREAM_LENGTH, i + radius)
             self.data[start:end] = self.behavior(**seasonal_config)[start:end]
             self.label[start:end] = 1
-    
+
+
 def main():
     np.random.seed(100)
 
-    BEHAVIOR_CONFIG = {'freq': 0.04, 'coef': 1.5, "offset": 0.0, 'noise_amp': 0.05}
+    BEHAVIOR_CONFIG = {'freq': 0.05, 'coef': 1.5,
+                       "offset": 0.0, 'noise_amp': 0.05}
     BASE = [1.4529900e-01, 1.2820500e-01, 9.4017000e-02, 7.6923000e-02, 1.1111100e-01, 1.4529900e-01, 1.7948700e-01,
-         2.1367500e-01, 2.1367500e-01]
+            2.1367500e-01, 2.1367500e-01]
 
-    univariate_data = UnivariateDataGenerator(stream_length=1000, behavior=sine, behavior_config=BEHAVIOR_CONFIG)
+    univariate_data = UnivariateDataGenerator(
+        stream_length=1000, behavior=sine, behavior_config=BEHAVIOR_CONFIG)
 
-    
     univariate_data.collective_global_outliers(ratio=0.05, radius=5, option='square', coef=1.5, noise_amp=0.03,
-                                                level=20, freq=0.04,
-                                                base=BASE, offset=0.0) #2
-    univariate_data.collective_seasonal_outliers(ratio=0.05, factor=3, radius=5) #3
-    univariate_data.collective_trend_outliers(ratio=0.05, factor=0.5, radius=5) #4
+                                               level=20, freq=0.04,
+                                               base=BASE, offset=0.0)  # 2
+    univariate_data.collective_seasonal_outliers(
+        ratio=0.05, factor=3, radius=5)  # 3
+    univariate_data.collective_trend_outliers(
+        ratio=0.05, factor=0.5, radius=5)  # 4
 
-    univariate_data.point_global_outliers(ratio=0.05, factor=3.5, radius=5) #0
-    univariate_data.point_contextual_outliers(ratio=0.05, factor=2.5, radius=5) #1
-    
-    
-
+    univariate_data.point_global_outliers(
+        ratio=0.05, factor=3.5, radius=5)  # 0
+    univariate_data.point_contextual_outliers(
+        ratio=0.05, factor=2.5, radius=5)  # 1
 
     # plt.plot(univariate_data.timestamp, univariate_data.data)
     # outlier_idxs = np.where(univariate_data.label == 1)[0]
@@ -194,8 +217,88 @@ def main():
     #             plt.axvspan(outlier[0], outlier[-1], color='red', alpha=0.5)
     # plt.show()
 
-    df = pd.DataFrame({'value': univariate_data.data, 'anomaly': univariate_data.label})
+    df = pd.DataFrame({'value': univariate_data.data,
+                      'anomaly': univariate_data.label})
     df.to_csv("data/01234.csv", index=False)
+
+
+def generateTS(id):
+    np.random.seed(id)
+
+    BEHAVIOR_CONFIG = {'freq': 0.02, 'coef': 1,
+                       "offset": 0.0, 'noise_amp': 0.05}
+    BASE = [1.4529900e-01, 1.2820500e-01, 9.4017000e-02, 7.6923000e-02, 1.1111100e-01, 1.4529900e-01, 1.7948700e-01,
+            2.1367500e-01, 2.1367500e-01]
     
+    univariate_data = UnivariateDataGenerator(
+        stream_length=1000, behavior=sine, behavior_config=BEHAVIOR_CONFIG)
+
+    fid = id % 5
+    func_to_run = [fid]
+
+    if 0 in func_to_run:
+        univariate_data.collective_global_outliers(ratio=0.05, radius=5, option='square', coef=1.5, noise_amp=0.03,
+                                                   level=20, freq=0.04,
+                                                   base=BASE, offset=0.0)  # 2
+    if 1 in func_to_run:
+        univariate_data.collective_seasonal_outliers(
+            ratio=0.05, factor=3, radius=5)  # 3
+    if 2 in func_to_run:
+        univariate_data.collective_trend_outliers(
+            ratio=0.05, factor=0.5, radius=5)  # 4
+    if 3 in func_to_run:
+        univariate_data.point_global_outliers(
+            ratio=0.05, factor=3.5, radius=5)  # 0
+    if 4 in func_to_run:
+        univariate_data.point_contextual_outliers(
+            ratio=0.05, factor=2.5, radius=5)
+
+    df = pd.DataFrame({'value': univariate_data.data,
+                      'anomaly': univariate_data.label})
+
+    return df
+
+
 if __name__ == '__main__':
-    main()
+    # plt.plot(generateTS(1))
+    # plt.show()
+    from IPython.display import clear_output
+    df = pd.concat([generateTS(n) for n in range(2, 30, 5)])
+    samples = df
+    start = 0
+    step = 50
+    interval = 100
+    end = df['value'].size - interval
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1) 
+    display_delay = 0.01
+    clear_delay = .2
+    dataset_ts = pd.DataFrame(columns=['ID','Start','End','Label','Percentage'])
+    ID = 0
+    while start < end:
+        ax.cla()
+        ax.axes.get_yaxis().set_visible(False)
+        ax.axes.get_xaxis().set_visible(False)
+        clear_output(wait = True)
+        fig.canvas.draw()
+        plt.pause(display_delay)
+        ls = []
+        ls.append(ID)
+        ls.append(start)
+        ls.append(start+interval)
+        slide_win = df[start: start + interval]
+        if (slide_win['anomaly'] == 1).sum()>0 :
+            ls.append(1)
+            ls.append((slide_win['anomaly'] == 1).sum() / interval)
+        else:
+            ls.append(0)
+            ls.append(0)
+        dataset_ts.loc[len(dataset_ts)] = ls  
+            
+        ax.plot(slide_win.reset_index()['value'])
+        clear_output(wait = True)
+        fig.canvas.draw()
+        plt.pause(clear_delay)
+        ID = ID + 1
+        start += step
+    print(dataset_ts)
