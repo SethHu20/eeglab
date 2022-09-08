@@ -6,7 +6,7 @@ import math
 import time
 from IPython.display import display, clear_output
 
-data_set_path = 'NeurIPS-ts/data/01234.csv'
+data_set_path = 'anomaly_ds_eeg-main/NeurIPS-ts/data/01234.csv'
 window_size = 70
 display_delay = 2
 sample_no = 5
